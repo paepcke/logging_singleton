@@ -63,7 +63,7 @@ class LoggingService(metaclass=MetaLoggingSingleton):
     #--------------
     
     def __repr__(self):
-        return f'<Review judgements logging service {hex(id(self))}>'
+        return f'<LoggingService {hex(id(self))}>'
 
     #-------------------------
     # Constructor 
