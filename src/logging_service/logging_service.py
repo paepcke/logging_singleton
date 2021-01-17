@@ -73,6 +73,7 @@ class LoggingService(metaclass=MetaLoggingSingleton):
     def __init__(self, 
                  logging_level=logging.INFO, 
                  logfile=None,
+                 tee_to_console=True,
                  msg_identifier=None,
                  rotating_logs=True,
                  log_size=1000000,
@@ -91,10 +92,12 @@ class LoggingService(metaclass=MetaLoggingSingleton):
         @type logging_level: int
         @param logfile: if provided, file path for the log file(s)
         @type logfile: str,
+        @param tee_to_console: used only if logfile is provided. If
+            True, then also send logs to console
+        @type tee_to_console: bool
         @param msg_identifier: if provided this string will
             be shown at the start of each log message. If None,
-            the Python module in argv[0] will be shown without
-            the .py extension.
+            the Python module in argv[0] will be shown
         @type msg_identifier: {None|str}
         @param rotating_logs: whether or not to rotate logs. 
         @type rotating_logs: bool
@@ -111,6 +114,7 @@ class LoggingService(metaclass=MetaLoggingSingleton):
         self._log_file = logfile
         self.setup_logging(self._logging_level, 
                            self._log_file,
+                           tee_to_console=tee_to_console,
                            msg_identifier=msg_identifier,
                            rotating_logs=rotating_logs,
                            log_size=log_size,
@@ -130,7 +134,13 @@ class LoggingService(metaclass=MetaLoggingSingleton):
     def logging_level(self, new_level):
         self._logging_level = new_level
         LoggingService.logger.setLevel(new_level)
+
+        # Found that need to set logging level
+        # for each handler separately:
         
+        for one_handler in self.handlers:
+            one_handler.setLevel(new_level)
+
     #-------------------------
     # logFile 
     #--------------
@@ -145,12 +155,15 @@ class LoggingService(metaclass=MetaLoggingSingleton):
         self._log_file = new_file
         # Remove the old logging handler.
         # Doesn't throw error if it's not there:
-        LoggingService.logger.removeHandler(LoggingService.logging_handler)
+
+        for one_handler in LoggingService.logging_handlers:
+            LoggingService.logger.removeHandler(one_handler)
         # Make a whole new logger with the
         # proper log file dest. This LoggingService 
         # instance will still be the same: 
         LoggingService.setup_logging(self.logging_level, 
                                      new_file, 
+                                     LoggingService.tee_to_console,
                                      LoggingService.msg_identifier, 
                                      LoggingService.rotating_logs, 
                                      LoggingService.log_size, 
@@ -174,6 +187,7 @@ class LoggingService(metaclass=MetaLoggingSingleton):
     def setup_logging(cls, 
                       loggingLevel=logging.INFO, 
                       logFile=None,
+                      tee_to_console=True,
                       msg_identifier=None,
                       rotating_logs=True,
                       log_size=1000000,
@@ -199,6 +213,7 @@ class LoggingService(metaclass=MetaLoggingSingleton):
         cls.msg_identifier = msg_identifier
         cls.rotating_logs  = rotating_logs
         cls.log_size       = log_size
+        cls.tee_to_console = tee_to_console
         cls.max_num_logs   = max_num_logs
         
         # Make the name of the logger be the name
@@ -206,7 +221,9 @@ class LoggingService(metaclass=MetaLoggingSingleton):
         if logger_name is None:
             (logger_name, _ext) = os.path.splitext(os.path.basename(__file__))
         LoggingService.logger = logging.getLogger(logger_name)
+        LoggingService.logger.setLevel(loggingLevel)
 
+        handlers = []
         # Create file handler if requested:
         if logFile is not None:
             if rotating_logs:
@@ -218,12 +235,15 @@ class LoggingService(metaclass=MetaLoggingSingleton):
             else:
                 handler = logging.FileHandler(logFile)
                 
-            print('Logging of control flow will go to %s' % logFile)
+            handlers.append(handler)
+            # Also log to console?
+            if tee_to_console:
+                handlers.append(logging.StreamHandler(sys.stdout))
+            # print('Logging of control flow will go to %s' % logFile)
         else:
             # Create console handler:
             handler = logging.StreamHandler()
-
-        handler.setLevel(loggingLevel)
+            handlers.append(handler)
 
         # Create formatter
         #formatter = logging.Formatter("%(name)s: %(asctime)s;%(levelname)s: %(message)s")
@@ -232,16 +252,21 @@ class LoggingService(metaclass=MetaLoggingSingleton):
 
         formatter = logging.Formatter(f"{cls.msg_identifier}({os.getpid()}): %(asctime)s;%(levelname)s: %(message)s")
 
-        handler.setFormatter(formatter)
-        
         # Avoid double entries from the default logger:
         LoggingService.logger.propagate = False        
 
-        # Add the handler to the logger
-        LoggingService.logger.addHandler(handler)
-        # Remember handler obj so we can remove it if 
+        # Set the handler(s) logging level,
+        # their formatter, and add them to 
+        # the logger
+        for one_handler in handlers:
+            one_handler.setLevel(loggingLevel)
+            one_handler.setFormatter(formatter)
+            LoggingService.logger.addHandler(one_handler)
+        
+            
+        # Remember handler obj(s) so we can remove them if 
         # a new logfile is requested:
-        cls.logging_handler = handler
+        cls.logging_handlers = handlers
         LoggingService.logger.setLevel(loggingLevel)
 
     #-------------------------
