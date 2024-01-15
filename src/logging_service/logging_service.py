@@ -4,19 +4,49 @@ Created on Jan 15, 2020
 @author: paepcke
 
 Singleton-instance class to share logging among
-modules. Usage:
+modules. Rather than the more general logger tree,
+this logging facility uses the same logger instance
+whenever any module of a program requests a logger.
 
-from logging_service import LoggingService
+Usage:
+
+from logging_service.logging_service import LoggingService
 
 Constructor:
             ...
-        self.log = LoggingService(logfile=logfile)
-        self.log.info("Constructing output file names...")
-        self.log.err("Constructing output file names...")
-        self.log.warn("Constructing output file names...")
-        self.log.debug("Constructing output file names...")
+        self.log = LoggingService()
+        self.log = LoggingService(logging_level=logging.DEBUG)
+        self.log = LoggingService(logfile='/tmp/my_log.log')
+        self.log.info("Doing something...")
+        self.log.err("Something went wrong...")
+        self.log.warn("You shouldn't do this...")
+        self.log.debug("Adding numbers...")
+        self.log.critical("Save your work immediately...")
 
 Easily specify rotating logs. See __init__() for all option.
+
+NOTE1: 
+      since this service is a singleton, the __init__() method
+      won't run when another copy of LoggingService is delivered.
+      This means:
+      
+          log1 = LoggingService(logging_level=logging.DEBUG)
+        
+        log1's logging level is DEBUG. Now:
+        
+          log2 = LoggingService(logging_level=logging.INFO)
+          
+        log1's and log2's logging level continues to be DEBUG.
+        Until
+        
+          log2.logging_level = logging.INFO
+          
+        at which point both log1 and lo2 are at INFO level.
+
+Note2: The logging level default is INFO, i.e. the first LoggingService()
+       call will return an instance at logging level INFO, not level
+       NOTSET, like the builtin logging facility. This was an oversight
+       that is not correctible without breaking backward compatibility.
 
 '''
 import logging
@@ -128,7 +158,21 @@ class LoggingService(metaclass=MetaLoggingSingleton):
     
     @property
     def logging_level(self):
-        return self._logging_level
+        '''
+        Return logging level as dict with 
+        level number and name:
+        '''
+        lvl = self._logging_level
+        if lvl == logging.DEBUG:
+            return {'number' : logging.DEBUG, 'name': 'DEBUG'}
+        if lvl == logging.INFO:
+            return {'number' : logging.INFO, 'name': 'INFO'}
+        if lvl == logging.WARN:
+            return {'number' : logging.WARN, 'name': 'WARN'}
+        if lvl == logging.ERROR:
+            return {'number' : logging.ERROR, 'name': 'ERROR'}
+        if lvl == logging.CRITICAL:
+            return {'number' : logging.CRITICAL, 'name': 'CRITICAL'}
         
     @logging_level.setter
     def logging_level(self, new_level):
@@ -140,6 +184,15 @@ class LoggingService(metaclass=MetaLoggingSingleton):
         
         for one_handler in self.handlers:
             one_handler.setLevel(new_level)
+            
+    def setLevel(self, new_level):
+        '''
+        Compatibility with standard logger
+        
+        :param new_level: new level
+        :type new_level: int
+        '''
+        self.logging_level = new_level
 
     #-------------------------
     # logFile 
@@ -270,7 +323,7 @@ class LoggingService(metaclass=MetaLoggingSingleton):
         LoggingService.logger.setLevel(loggingLevel)
 
     #-------------------------
-    # log_debug/warn/info/err 
+    # log_debug/warn/info/err/critical 
     #--------------
 
     def debug(self, msg):
@@ -284,6 +337,9 @@ class LoggingService(metaclass=MetaLoggingSingleton):
 
     def err(self, msg):
         LoggingService.logger.error(msg)
+        
+    def critical(self, msg):
+        LoggingService.logger.critical(msg)
 
 # ------------------------- Main ---------------
 
