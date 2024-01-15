@@ -146,6 +146,23 @@ class SingletonLoggerTest(unittest.TestCase):
         self.assertDictEqual(log1.logging_level, expected2)
         self.assertDictEqual(log2.logging_level, expected2)
         
+    #------------------------------------
+    # test_new_instance_forcing
+    #-------------------
+    
+    @unittest.skipIf(TEST_ALL != True, 'skipping temporarily')
+    def test_new_instance_forcing(self):
+        
+        log1 = LoggingService()
+        log1.logging_level = logging.DEBUG
+        
+        # Now force a new instance, initilizing logging level:
+        log2 = LoggingService(logging_level=logging.INFO, force=True)
+        self.assertEqual(log2.logging_level['name'], 'INFO')
+        
+        # But log1 is still DEBUG:
+        self.assertEqual(log1.logging_level['name'], 'DEBUG')
+        
     # ---------------- Stdout Redirects -------
     
     #------------------------------------

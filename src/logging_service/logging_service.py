@@ -63,7 +63,19 @@ class MetaLoggingSingleton(type):
         cls.instance = None
     
     def __call__(cls, *args, **kwargs):
-        if cls.instance is not None:
+
+        try:
+            force = kwargs['force']
+            if type(force) != bool:
+                raise TypeError(f"Force keyword value must be True or False, not '{force}'")
+            # Remove 'force' from kwargs, else the force
+            # kwarg is passed to the __init__() method, 
+            # which does not expect it:
+            del(kwargs['force'])
+        except KeyError:
+            force = False
+            
+        if cls.instance is not None and not force:
             return cls.instance
         cls.instance = super(MetaLoggingSingleton, cls).__call__(*args, **kwargs)
         return cls.instance
