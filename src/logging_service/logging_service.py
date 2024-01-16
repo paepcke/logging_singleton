@@ -152,6 +152,7 @@ class LoggingService(metaclass=MetaLoggingSingleton):
         @type logger_name: str
         '''
 
+        self.name = logger_name
         self._logging_level = logging_level
         self._log_file = logfile
         self.setup_logging(self._logging_level, 

@@ -95,15 +95,23 @@ class SingletonLoggerTest(unittest.TestCase):
     # test_tee_to_console
     #-------------------
     
-    #****@unittest.skipIf(TEST_ALL != True, 'skipping temporarily')
+    @unittest.skipIf(TEST_ALL != True, 'skipping temporarily')
     def test_tee_to_console(self):
         
-        log = LoggingService(tee_to_console=True)
-        log.logging_level = logging.INFO
-        
-        
+        with tempfile.NamedTemporaryFile(delete=True) as fd:
+            
+            log = LoggingService(logging_level=logging.INFO,
+                                 tee_to_console=True, 
+                                 force=True,
+                                 logfile=fd.name)
 
-        
+            msg = "This is log file TEE to console test."
+            with self.assertPrints(msg, log=log):
+                log.info(msg)
+            with open(fd.name, 'r') as fd_read:
+                content  = fd_read.readlines()[0]
+                self.assertTrue(content.endswith(f"{msg}\n"))
+
     #------------------------------------
     # test_file_logging
     #-------------------
@@ -163,6 +171,32 @@ class SingletonLoggerTest(unittest.TestCase):
         # But log1 is still DEBUG:
         self.assertEqual(log1.logging_level['name'], 'DEBUG')
         
+    #------------------------------------
+    # test_logger_name
+    #-------------------
+    
+    @unittest.skipIf(TEST_ALL != True, 'skipping temporarily')
+    def test_logger_name(self):
+        
+        log = LoggingService(logger_name='MyName', force=True)
+        log.info("This is a test")
+        
+    #------------------------------------
+    # test_msg_identifier
+    #-------------------
+    
+    @unittest.skipIf(TEST_ALL != True, 'skipping temporarily')
+    def test_msg_identifier(self):
+        
+        log = LoggingService(msg_identifier='My module', force=True)
+        msg = "This is mod name test"
+        tst_func = lambda s, b: s.startswith(b)
+        with self.assertPrints('My module', 
+                               log=log, 
+                               tst_func=tst_func, 
+                               trailing_nl=False):
+            log.info(msg)
+        
     # ---------------- Stdout Redirects -------
     
     #------------------------------------
@@ -172,7 +206,8 @@ class SingletonLoggerTest(unittest.TestCase):
     # As a bonus, this syntactical sugar becomes possible:
     def assertPrints(self, *expected_output, 
                      trailing_nl=True,
-                     log=None):
+                     log=None,
+                     tst_func=None):
         '''
         Version of assertStdout that takes multiple
         lines of expected output. Usage:
@@ -183,13 +218,22 @@ class SingletonLoggerTest(unittest.TestCase):
 	         
         :param *expected_output: any number of expected strings
         :type *expected_output: str
-        :param stream: which output stream to monitor
-        :type stream: Stream
+        :param trailing_nl: whether or not to expect an nl
+            after the expected output
+        :type trailing_nl: bool
+        :param log: LoggingService instance
+        :type log: LoggingService
+        :param tst_func: function that returns True/False when
+            comparing expected to actual. The function will be
+            called with two strings.
+        :type tst_func: callable
         :raise AssertionError
         '''
-        expected_output = "\n".join(expected_output) +\
-            "\n" if trailing_nl else ''
-        return _AssertStdoutContext(self, expected_output, log=log)
+        if trailing_nl:
+            expected_output = "\n".join(expected_output) + '\n'
+        else:
+            expected_output = "\n".join(expected_output)
+        return _AssertStdoutContext(self, expected_output, log=log, tst_func=tst_func)
     
 # ---------------- Stdout Redirect Context Manager ---------    
 
@@ -203,7 +247,7 @@ class _AssertStdoutContext:
        https://stackoverflow.com/questions/33767627/python-write-unittest-for-console-print
     '''
 
-    def __init__(self, testcase, expected, log=None):
+    def __init__(self, testcase, expected, log=None, tst_func=None):
         '''
         
         :param testcase: instance test case
@@ -215,6 +259,10 @@ class _AssertStdoutContext:
         self.expected = expected
         self.captured = io.StringIO()
         self.log      = log
+        if tst_func is None:
+            self.tst_func = lambda s, e: s.endswith(e)
+        else:
+            self.tst_func = tst_func
 
     def __enter__(self):
         '''
@@ -235,7 +283,9 @@ class _AssertStdoutContext:
         if len(self.expected) == 0:
             self.testcase.assertTrue(len(captured) == 0)
         else:
-            self.testcase.assertTrue(captured.endswith(self.expected))
+            self.testcase.assertTrue(self.tst_func(captured, self.expected),
+                                     f"got '{captured}';  exp: '{self.expected}'"
+                                     )
 
 # ------------------------- Main ------------
 if __name__ == "__main__":

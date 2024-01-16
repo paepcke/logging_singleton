@@ -1,11 +1,8 @@
 # Singleton Logging Service
 
-Logging service that is guaranteed to be a singleton. Based on Python
-logging, but every instantiation of LoggingService from any of an
-application's modules returns the same logger instance. Uses
-RotatingFileHandler by default, if logfile is provided.
+Logging service that is guaranteed to be a singleton. Based on Python logging, but every instantiation of LoggingService from any of an application's modules returns the same logger instance.
 
-Code example:
+###Examples:
 
         from logging_service import LoggingService
 
@@ -16,12 +13,11 @@ Code example:
         self.log.warn("Output file names are unusual...")
         self.log.debug("Constructing output file names foo.bar, fum.txt...")
 
-This API is more primitive than the hierarchical native logging
-module, but hopefully simple to use. One can:
+This API is more primitive than the hierarchical native logging module, but hopefully simple to use. One can:
 
-        log to a file,
-        the console, or
-        both
+        - Log to a file,
+        - The console, or
+        - Both
         
 A single formatter is built in for info/debug/warn/err. Example:
 
