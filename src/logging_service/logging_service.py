@@ -286,9 +286,14 @@ class LoggingService(metaclass=MetaLoggingSingleton):
         # of this file, without the .py extension:
         if logger_name is None:
             (logger_name, _ext) = os.path.splitext(os.path.basename(__file__))
-        LoggingService.logger = logging.getLogger(logger_name)
-        LoggingService.logger.setLevel(loggingLevel)
+        the_logger = logging.getLogger(logger_name)
+        if the_logger.hasHandlers():
+            while len(the_logger.handlers) > 0:
+                the_logger.removeHandler(the_logger.handlers[-1])
+        the_logger.setLevel(loggingLevel)
+        LoggingService.logger = the_logger 
 
+        # Add handlers as needed:
         handlers = []
         # Create file handler if requested:
         if logFile is not None:

@@ -19,7 +19,6 @@ class Stream(Enum):
 
 class SingletonLoggerTest(unittest.TestCase):
 
-
     def setUp(self):
         pass
 
@@ -45,39 +44,40 @@ class SingletonLoggerTest(unittest.TestCase):
     
     @unittest.skipIf(TEST_ALL != True, 'skipping temporarily')
     def test_log_level(self):
-        
+    
         log = LoggingService()
         log.logging_level = logging.DEBUG
-        
+    
         # All above DEBUG should print:
         with self.assertPrints("Debug test",log=log): 
             log.debug('Debug test')
-            
+    
         with self.assertPrints("Info test",log=log):
             log.info('Info test')
-        
+    
         with self.assertPrints("Warn test",log=log):
             log.warn('Warn test')
-        
+    
         with self.assertPrints("Error test",log=log):
             log.err('Error test')
-        
+    
         with self.assertPrints("Critical test",log=log):
             log.critical('Critical test')
-        
+    
         # Change logging level:
         log.logging_level = logging.ERROR
         # Now only error and critical should print anything:
         with self.assertPrints("Error test",log=log):
             log.err('Error test')
-        
+    
         with self.assertPrints("Critical test",log=log):
             log.critical('Critical test')
-        
+    
         # ... Info should not show:
         with self.assertPrints("",log=log, trailing_nl=False):
             log.info('Info test')
-        
+    
+
     #------------------------------------
     # test_level_names
     #-------------------
@@ -97,19 +97,22 @@ class SingletonLoggerTest(unittest.TestCase):
     
     @unittest.skipIf(TEST_ALL != True, 'skipping temporarily')
     def test_tee_to_console(self):
-        
+    
         with tempfile.NamedTemporaryFile(delete=True) as fd:
-            
+    
             log = LoggingService(logging_level=logging.INFO,
                                  tee_to_console=True, 
                                  force=True,
                                  logfile=fd.name)
-
+    
             msg = "This is log file TEE to console test."
             with self.assertPrints(msg, log=log):
                 log.info(msg)
+            fd.seek(0)
             with open(fd.name, 'r') as fd_read:
-                content  = fd_read.readlines()[0]
+                lines  = fd_read.readlines()
+                self.assertEqual(len(lines), 1, f"Number of lines in file: {len(lines)}")
+                content = lines[0]
                 self.assertTrue(content.endswith(f"{msg}\n"))
 
     #------------------------------------
@@ -118,11 +121,11 @@ class SingletonLoggerTest(unittest.TestCase):
     
     @unittest.skipIf(TEST_ALL != True, 'skipping temporarily')
     def test_file_logging(self):
-        
+    
         # Test to file, and then read back:
         #  Written  :  'test_logging_...INFO: This is a log file test.'
         #  Read back: ['test_logging_...INFO: This is a log file test.\n']
-        
+    
         with tempfile.NamedTemporaryFile(delete=True) as fd:
             log = LoggingService(logfile=fd.name)
             msg = "This is a log file test."
@@ -187,7 +190,7 @@ class SingletonLoggerTest(unittest.TestCase):
     
     @unittest.skipIf(TEST_ALL != True, 'skipping temporarily')
     def test_msg_identifier(self):
-        
+    
         log = LoggingService(msg_identifier='My module', force=True)
         msg = "This is mod name test"
         tst_func = lambda s, b: s.startswith(b)
@@ -272,13 +275,21 @@ class _AssertStdoutContext:
         :param stream: which output stream to monitor
         :type stream: Stream
         '''
-        self.orig_stream = self.log.handlers[0].stream
-        self.log.handlers[0].setStream(self.captured)
+        self.handler_to_mod = None
+        for handler in self.log.handlers:
+            if type(handler) == logging.StreamHandler:
+                self.handler_to_mod = handler
+                break
+        if self.handler_to_mod is None:
+            raise RuntimeError("Log does not contain a console stream handler")
+        
+        self.orig_stream = self.handler_to_mod.stream
+        self.handler_to_mod.setStream(self.captured)
         return self
 
     def __exit__(self, _exc_type, _exc_value, _tb):
         captured = self.captured.getvalue()
-        self.log.handlers[0].setStream(self.orig_stream)
+        self.handler_to_mod.setStream(self.orig_stream)
         
         if len(self.expected) == 0:
             self.testcase.assertTrue(len(captured) == 0)

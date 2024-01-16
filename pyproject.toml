@@ -2,10 +2,13 @@
 
 requires = ["setuptools >= 64", "cython", "wheel"]
 
+[tests]
+command = python -m unittest --start-directory src
+
 [project]
 
 name = "logging-singleton"
-description = "Logger shared by all module in a program. Simplification of standard Python logging"
+description = "Logger shared by all modules in a program. Simplification of standard Python logging"
 version = "1.0"
 readme  = "README.md"
 authors = [
