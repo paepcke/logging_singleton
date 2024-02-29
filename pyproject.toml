@@ -1,15 +1,13 @@
 [build-system]
 
-requires = ["setuptools >= 64", "cython", "wheel"]
-
-[tests]
-command = python -m unittest --start-directory src
+#requires = ["setuptools >= 64", "cython", "wheel"]
+requires = ["setuptools >= 60.10.0", "cython", "wheel"]
 
 [project]
 
 name = "logging-singleton"
 description = "Logger shared by all modules in a program. Simplification of standard Python logging"
-version = "1.0"
+version = "1.0.2"
 readme  = "README.md"
 authors = [
   {name = "Andreas Paepcke", email = "paepcke@cs.stanford.edu"}

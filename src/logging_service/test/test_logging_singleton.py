@@ -44,6 +44,11 @@ class SingletonLoggerTest(unittest.TestCase):
     
     @unittest.skipIf(TEST_ALL != True, 'skipping temporarily')
     def test_log_level(self):
+        
+        # Test whether passing a log level 
+        # to initializer sets the level:
+        log = LoggingService(logging_level=logging.DEBUG)
+        self.assertEqual(log.logging_level['number'], logging.DEBUG)
     
         log = LoggingService()
         log.logging_level = logging.DEBUG
