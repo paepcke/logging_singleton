@@ -25,7 +25,12 @@ Constructor:
 
 Easily specify rotating logs. See __init__() for all option.
 
-NOTE1: 
+Clients need not import logging to access logging levels, such
+as logging.DEBUG. While fine, it is intead possible to use
+the LoggingLevel enum: LoggingLevel.DEBUG, LoggingLevel.INFO, 
+etc.
+
+TRAP: 
       since this service is a singleton, the __init__() method
       won't run when another copy of LoggingService is delivered.
       This means:

@@ -7,7 +7,7 @@ requires = ["setuptools >= 60.10.0", "cython", "wheel"]
 
 name = "logging-singleton"
 description = "Logger shared by all modules in a program. Simplification of standard Python logging"
-version = "1.0.3"
+version = "1.0.4"
 readme  = "README.md"
 authors = [
   {name = "Andreas Paepcke", email = "paepcke@cs.stanford.edu"}
@@ -29,6 +29,6 @@ test = [
 
 Homepage = "https://github.com/paepcke/logging_singleton"
 Documentation = "https://github.com/paepcke/logging_singleton"
-Changelog = "https://github.com/your/repo/blob/main/CHANGELOG.md"
+Changelog = "https://github.com/paepcke/logging_singleton/blob/master/CHANGELOG.md"
 Repository = "https://github.com/paepcke/logging_singleton"
 
