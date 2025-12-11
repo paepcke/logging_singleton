@@ -15,7 +15,7 @@ from logging_service.logging_service import LoggingService
 Constructor:
             ...
         self.log = LoggingService()
-        self.log = LoggingService(logging_level=logging.DEBUG)
+        self.log = LoggingService(logging_level=LogingLevel .DEBUG)
         self.log = LoggingService(logfile='/tmp/my_log.log')
         self.log.info("Doing something...")
         self.log.err("Something went wrong...")
@@ -30,18 +30,18 @@ NOTE1:
       won't run when another copy of LoggingService is delivered.
       This means:
       
-          log1 = LoggingService(logging_level=logging.DEBUG)
+          log1 = LoggingService(logging_level=LoggingLevel.DEBUG)
         
         log1's logging level is DEBUG. Now:
         
-          log2 = LoggingService(logging_level=logging.INFO)
+          log2 = LoggingService(logging_level=LoggingLevel.INFO)
           
         log1's and log2's logging level continues to be DEBUG.
         Until
         
-          log2.logging_level = logging.INFO
+          log2.logging_level = LogingLevel.INFO
           
-        at which point both log1 and lo2 are at INFO level.
+        at which point both log1 and log2 are at INFO level.
 
 Note2: The logging level default is INFO, i.e. the first LoggingService()
        call will return an instance at logging level INFO, not level
@@ -53,13 +53,23 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 import sys
+from enum import Enum
+from typing import List, Optional, Tuple, Dict, Any
 
+# Exposing the loging level numbers:
+class LoggingLevel(Enum):
+    NOTSET   = logging.NOTSET
+    DEBUG    = logging.DEBUG
+    INFO     = logging.INFO
+    WARN     = logging.WARN
+    ERROR    = logging.ERROR
+    CRITICAL = logging.CRITICAL
 
 # ----------------------------- Metaclass ---------------------
 class MetaLoggingSingleton(type):
     
-    def __init__(cls, name, bases, dic):
-        super(MetaLoggingSingleton, cls).__init__(name, bases, dic)
+    def __init__(cls, name: str, bases: Tuple[type, ...], dic: Dict[str, Any]) -> None:
+        super().__init__(name, bases, dic)
         cls.instance = None
     
     def __call__(cls, *args, **kwargs):
@@ -104,7 +114,7 @@ class LoggingService(metaclass=MetaLoggingSingleton):
     # __repr__ 
     #--------------
     
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<LoggingService {hex(id(self))}>'
 
     #-------------------------
@@ -113,14 +123,14 @@ class LoggingService(metaclass=MetaLoggingSingleton):
 
 
     def __init__(self, 
-                 logging_level=logging.INFO, 
-                 logfile=None,
-                 tee_to_console=True,
-                 msg_identifier=None,
-                 rotating_logs=True,
-                 log_size=1000000,
-                 max_num_logs=500,
-                 logger_name=None):
+                 logging_level: LoggingLevel | int = LoggingLevel.INFO, 
+                 logfile: Optional[str] = None,
+                 tee_to_console: bool =True,
+                 msg_identifier: Optional[str] = None,
+                 rotating_logs: bool = True,
+                 log_size: int = 1000000,
+                 max_num_logs: int = 500,
+                 logger_name: Optional[str] = None) -> None:
 
         '''
         Create a shared logging service.
@@ -153,7 +163,7 @@ class LoggingService(metaclass=MetaLoggingSingleton):
         '''
 
         self.name = logger_name
-        self._logging_level = logging_level
+        self._logging_level = self._ll_as_int(logging_level)
         self._log_file = logfile
         self.setup_logging(self._logging_level, 
                            self._log_file,
@@ -170,53 +180,54 @@ class LoggingService(metaclass=MetaLoggingSingleton):
     #--------------
     
     @property
-    def logging_level(self):
+    def logging_level(self) -> Dict[str, int | str]:
         '''
         Return logging level as dict with 
         level number and name:
         '''
         lvl = self._logging_level
-        if lvl == logging.DEBUG:
-            return {'number' : logging.DEBUG, 'name': 'DEBUG'}
-        if lvl == logging.INFO:
-            return {'number' : logging.INFO, 'name': 'INFO'}
-        if lvl == logging.WARN:
-            return {'number' : logging.WARN, 'name': 'WARN'}
-        if lvl == logging.ERROR:
-            return {'number' : logging.ERROR, 'name': 'ERROR'}
-        if lvl == logging.CRITICAL:
-            return {'number' : logging.CRITICAL, 'name': 'CRITICAL'}
+        if lvl == LoggingLevel.DEBUG.value:
+            return {'number' : LoggingLevel.DEBUG.value, 'name': 'DEBUG'}
+        if lvl == LoggingLevel.INFO.value:
+            return {'number' : LoggingLevel.INFO.value, 'name': 'INFO'}
+        if lvl == LoggingLevel.WARN.value:
+            return {'number' : LoggingLevel.WARN.value, 'name': 'WARN'}
+        if lvl == LoggingLevel.ERROR.value:
+            return {'number' : LoggingLevel.ERROR.value, 'name': 'ERROR'}
+        if lvl == LoggingLevel.CRITICAL.value:
+            return {'number' : LoggingLevel.CRITICAL.value, 'name': 'CRITICAL'}
         
     @logging_level.setter
-    def logging_level(self, new_level):
-        self._logging_level = new_level
-        LoggingService.logger.setLevel(new_level)
+    def logging_level(self, new_level: LoggingLevel | int) -> None:
+        int_level = self._ll_as_int(new_level)
+        self._logging_level = int_level
+        LoggingService.logger.setLevel(int_level)
 
         # Found that need to set logging level
         # for each handler separately:
         
         for one_handler in self.handlers:
-            one_handler.setLevel(new_level)
+            one_handler.setLevel(int_level)
             
-    def setLevel(self, new_level):
+    def setLevel(self, new_level: LoggingLevel | int) -> None:
         '''
         Compatibility with standard logger
         
         :param new_level: new level
         :type new_level: int
         '''
-        self.logging_level = new_level
+        self.logging_level = self._ll_as_int(new_level)
 
     #-------------------------
     # logFile 
     #--------------
         
     @property
-    def log_file(self):
+    def log_file(self) -> str | None:
         return self._log_file
     
     @log_file.setter
-    def log_file(self, new_file):
+    def log_file(self, new_file: str) -> None:
         
         self._log_file = new_file
         # Remove the old logging handler.
@@ -242,7 +253,7 @@ class LoggingService(metaclass=MetaLoggingSingleton):
     #--------------
     
     @property
-    def handlers(self):
+    def handlers(self) -> List[logging.StreamHandler]:
         return self.logger.handlers
 
     #-------------------------
@@ -251,14 +262,14 @@ class LoggingService(metaclass=MetaLoggingSingleton):
     
     @classmethod
     def setup_logging(cls, 
-                      loggingLevel=logging.INFO, 
-                      logFile=None,
-                      tee_to_console=True,
-                      msg_identifier=None,
-                      rotating_logs=True,
-                      log_size=1000000,
-                      max_num_logs=500,
-                      logger_name=None
+                      loggingLevel: LoggingLevel | int = LoggingLevel.INFO, 
+                      logFile: Optional[str] = None,
+                      tee_to_console: bool = True,
+                      msg_identifier: Optional[str] = None,
+                      rotating_logs: bool = True,
+                      log_size: int = 1000000,
+                      max_num_logs: int = 500,
+                      logger_name: Optional[str] = None
                       ):
         '''
         Set up the standard Python logger.
@@ -268,7 +279,7 @@ class LoggingService(metaclass=MetaLoggingSingleton):
         is used without the .py extension.
 
         @param loggingLevel: initial logging level
-        @type loggingLevel: {logging.INFO|WARN|ERROR|DEBUG}
+        @type loggingLevel: {LoggingLevel.INFO|WARN|ERROR|DEBUG}
         @param logFile: optional file path where to send log entries
         @type logFile: str
         '''
@@ -344,43 +355,43 @@ class LoggingService(metaclass=MetaLoggingSingleton):
     # log_debug/warn/info/err/critical 
     #--------------
 
-    def debug(self, msg):
+    def debug(self, msg: str) -> None:
         LoggingService.logger.debug(msg)
 
-    def warn(self, msg):
+    def warn(self, msg: str) -> None:
         LoggingService.logger.warning(msg)
 
-    def info(self, msg):
+    def info(self, msg: str) -> None:
         LoggingService.logger.info(msg)
 
-    def err(self, msg):
+    def err(self, msg: str) -> None:
         LoggingService.logger.error(msg)
         
-    def critical(self, msg):
+    def critical(self, msg: str) -> None:
         LoggingService.logger.critical(msg)
 
+    def _ll_as_int(self, logging_level: LoggingLevel | int) -> int:
+        '''
+        Given either an int, or a LoggingLevel enum member,
+        return the appropriate int. No check is made whether
+        a given int is a legal logging.logglevel.
+
+        :param logging_level: _description_
+        :type logging_level: LoggingLevel | int
+        :return: integer logging level
+        :rtype: int
+        '''
+        if isinstance(logging_level, LoggingLevel):
+            return logging_level.value
+        elif type(logging_level) == int:
+            return logging_level
+        else:
+            raise TypeError(f"Argument must be an int or LoggingLevel")
+        
 # ------------------------- Main ---------------
 
 # For testing only; this module is intended for import.
 if __name__ == '__main__':
     pass 
-    
-#    l = LoggingService()
-#    print(l)
-#    lsame = LoggingService()
-#    print(lsame)
-#     l1 = LoggingService(log_file='/tmp/trash.log')
-#     print(l1)
-#     l1same = LoggingService(log_file='/tmp/trash.log')
-#     print(l1same)
-#     l2 = LoggingService()
-#     print(l2)
-
-#     l = LoggingService(log_file='/tmp/trash.log',
-#                        rotating_logs=True,
-#                        log_size=10,
-#                        max_num_logs=4
-#                        )
-#     l.info('123456789')
-#     
+     
     

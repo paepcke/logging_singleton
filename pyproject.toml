@@ -7,7 +7,7 @@ requires = ["setuptools >= 60.10.0", "cython", "wheel"]
 
 name = "logging-singleton"
 description = "Logger shared by all modules in a program. Simplification of standard Python logging"
-version = "1.0.2"
+version = "1.0.3"
 readme  = "README.md"
 authors = [
   {name = "Andreas Paepcke", email = "paepcke@cs.stanford.edu"}
@@ -16,10 +16,14 @@ maintainers = [
   {name = "Andreas Paepcke", email = "paepcke@cs.stanford.edu"}
   ]
 license = {text = "MIT License"}
+requires-python = ">= 3.5"
 
 dependencies = []
 
-requires-python = ">= 3.8"
+[project.optional-dependencies]
+test = [
+  "pytest>=9.0.2",
+]
 
 [project.urls]
 

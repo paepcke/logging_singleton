@@ -4,7 +4,7 @@ Created on Jan 15, 2024
 @author: paepcke
 '''
 from enum import Enum
-from logging_service.logging_service import LoggingService
+from logging_service.logging_service import LoggingLevel, LoggingService
 import io
 import logging
 import tempfile
@@ -39,15 +39,20 @@ class SingletonLoggerTest(unittest.TestCase):
         self.assertEqual(id(log1), id(log2))
     
     #------------------------------------
-    # test_log_level
+    # test_log_level_int_levels
     #-------------------
     
     @unittest.skipIf(TEST_ALL != True, 'skipping temporarily')
-    def test_log_level(self):
+    def test_log_level_int_levels(self):
         
         # Test whether passing a log level 
         # to initializer sets the level:
-        log = LoggingService(logging_level=logging.DEBUG)
+        log = LoggingService()
+        log.setLevel(logging.DEBUG) # 10
+        #**********
+        print(f"logging_level['number']: {log.logging_level['number']}")
+        print(f"logging.DEBUG: {logging.DEBUG}")
+        #**********
         self.assertEqual(log.logging_level['number'], logging.DEBUG)
     
         log = LoggingService()
@@ -71,6 +76,50 @@ class SingletonLoggerTest(unittest.TestCase):
     
         # Change logging level:
         log.logging_level = logging.ERROR
+        # Now only error and critical should print anything:
+        with self.assertPrints("Error test",log=log):
+            log.err('Error test')
+    
+        with self.assertPrints("Critical test",log=log):
+            log.critical('Critical test')
+    
+        # ... Info should not show:
+        with self.assertPrints("",log=log, trailing_nl=False):
+            log.info('Info test')
+    
+    #------------------------------------
+    # test_log_level_enum_levels
+    #-------------------
+    
+    @unittest.skipIf(TEST_ALL != True, 'skipping temporarily')
+    def test_log_leve_enum_levelsl(self):
+        
+        # Test whether passing a log level 
+        # to initializer sets the level:
+        log = LoggingService(logging_level=LoggingLevel.DEBUG)
+        self.assertEqual(log.logging_level['number'], LoggingLevel.DEBUG.value)
+    
+        log = LoggingService()
+        log.logging_level = LoggingLevel.DEBUG
+    
+        # All above DEBUG should print:
+        with self.assertPrints("Debug test",log=log): 
+            log.debug('Debug test')
+    
+        with self.assertPrints("Info test",log=log):
+            log.info('Info test')
+    
+        with self.assertPrints("Warn test",log=log):
+            log.warn('Warn test')
+    
+        with self.assertPrints("Error test",log=log):
+            log.err('Error test')
+    
+        with self.assertPrints("Critical test",log=log):
+            log.critical('Critical test')
+    
+        # Change logging level:
+        log.logging_level = LoggingLevel.ERROR
         # Now only error and critical should print anything:
         with self.assertPrints("Error test",log=log):
             log.err('Error test')
