@@ -18,6 +18,9 @@ This API is more primitive than the hierarchical native logging module, but hope
         - Log to a file,
         - The console, or
         - Both
+
+For convenience, the logging levels logging.DEBUG, logging.INFO, etc. are available in this 
+package as enums: LoggingLevel.DEBUG, LoggingLevel.INFO, etc. Just import LoggingLevel with LoggingService.
         
 A single formatter is built in for info/debug/warn/err. Example:
 
@@ -26,7 +29,7 @@ A single formatter is built in for info/debug/warn/err. Example:
 When first creating a LoggingService instance, the following options
 are available in the constructor; all are optional:
 
-    logging_level=logging.INFO    # the Python logging package's constants
+    logging_level=LoggingLevel.INFO    # equivalent to the Python logging package's constants
     logfile=None,                 # destination file; None implies console only
     tee_to_console=True,          # if logfile is specified, also log to console
     msg_identifier=None,          # shown at start of each msg; default is module name
@@ -37,7 +40,7 @@ are available in the constructor; all are optional:
 
 After creation a logger instance may only be modified like this:
 
-    - my_logger.logging_level = logging.NEW_LEVEL
+    - my_logger.logging_level = LoginLevel.<NEW_LEVEL>
     - my_logger.log_file      = '/tmp/new_logfile'
 
 where logging levels are the usual `logging.INFO,` `logging.WARN`, etc.
