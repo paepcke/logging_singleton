@@ -29,5 +29,6 @@ test = [
 
 Homepage = "https://github.com/paepcke/logging_singleton"
 Documentation = "https://github.com/paepcke/logging_singleton"
+Changelog = "https://github.com/your/repo/blob/main/CHANGELOG.md"
 Repository = "https://github.com/paepcke/logging_singleton"
 
